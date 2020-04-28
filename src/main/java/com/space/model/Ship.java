@@ -1,42 +1,43 @@
 package com.space.model;
 
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
+import javax.persistence.*;
+
 import java.io.Serializable;
 import java.util.Date;
 
 @Entity
+@Table(name = "ship")
+public class Ship implements Serializable {
 
-public class Ship implements Serializable{
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     private Long id;
+
+    @Column(name = "name")
     private String name;
+    @Column(name = "planet")
     private String planet;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shipType")
     private ShipType shipType;
+    @Column(name = "prodDate")
     private Date prodDate;
-    private boolean isUsed;
+    @Column(name = "isUsed")
+    private Boolean isUsed;
+    @Column(name = "speed")
     private Double speed;
+    @Column(name = "crewSize")
     private Integer crewSize;
+    @Column(name = "rating")
     private Double rating;
 
-    public Ship() {
+    protected Ship() {
     }
 
-    public Ship(String name, String planet, ShipType shipType, Date prodDate, boolean isUsed,
-                Double speed, Integer crewSize, Double rating) {
-        this.name = name;
-        this.planet = planet;
-        this.shipType = shipType;
-        this.prodDate = prodDate;
-        this.isUsed = isUsed;
-        this.speed = speed;
-        this.crewSize = crewSize;
-        this.rating = rating;
-    }
-    @Id
-    @GeneratedValue
+
+
     public Long getId() {
         return id;
     }
@@ -77,7 +78,7 @@ public class Ship implements Serializable{
         this.prodDate = prodDate;
     }
 
-    public boolean isUsed() {
+    public Boolean isUsed() {
         return isUsed;
     }
 
