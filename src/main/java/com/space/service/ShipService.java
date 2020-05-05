@@ -1,6 +1,7 @@
 package com.space.service;
 
 
+import com.space.controller.BadRequestExeption;
 import com.space.model.Ship;
 import com.space.model.ShipType;
 import com.space.repository.ShipRepository;
@@ -11,8 +12,11 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
 
 @Service
 @Transactional
@@ -21,111 +25,210 @@ public class ShipService {
     ShipRepository repo;
 
 
+// Getting of list of all ships with filration
 
-
-    public Page<Ship> getAllExistingShipsList(Specification<Ship> specification, Pageable sortedByName) {
-
-        Page<Ship> result = repo.findAll(specification, sortedByName);
-        return result;
+    public Page<Ship> getAllShip(Specification<Ship> specification, Pageable page) {
+        Page<Ship> ships;
+        ships = repo.findAll(specification, page);
+        return ships;
     }
 
-    public Specification<Ship> nameFilter(String name) {
+
+    //  Setting of filters
+
+    public Specification<Ship> filterByName (String name) {
         return (root, query, criteriaBuilder) -> name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
 
 
-    public Specification<Ship> planetFilter(String planet) {
+    public Specification<Ship> filterByPlanet(String planet) {
         return (root, query, criteriaBuilder) -> planet == null ? null : criteriaBuilder.like(root.get("planet"), "%" + planet + "%");
     }
 
 
-    public Specification<Ship> shipTypeFilter(ShipType shipType) {
+    public Specification<Ship> filterByShipType (ShipType shipType) {
         return (root, query, criteriaBuilder) -> shipType == null ? null : criteriaBuilder.equal(root.get("shipType"), shipType);
     }
 
 
-    public Specification<Ship> dateFilter(Long after, Long before) {
+    public Specification<Ship> filterByProdDate(Long yearAfter, Long yearBefore) {
+
         return (root, query, criteriaBuilder) -> {
-            if (after == null && before == null) {
-                return null;
+            if (yearAfter != null && yearBefore != null) {
+                return criteriaBuilder.between(root.get("prodDate"), new Date(yearAfter), new Date(yearBefore)); }
+            else if(yearAfter!=null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("prodDate"), new Date(yearAfter));
             }
-            if (after == null) {
-                Date before1 = new Date(before);
-                return criteriaBuilder.lessThanOrEqualTo(root.get("prodDate"), before1);
+            else if (yearBefore!= null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get("prodDate"), new Date(yearBefore));
             }
-            if (before == null) {
-                Date after1 = new Date(after);
-                return criteriaBuilder.greaterThanOrEqualTo(root.get("prodDate"), after1);
+            else return null;
+        };
+    }
+
+    public Specification<Ship> filterOfUsedShip(Boolean isUsed) {
+        return (root, query, criteriaBuilder) -> isUsed == null ? null :
+                isUsed ? criteriaBuilder.isTrue(root.get("isUsed")):
+                         criteriaBuilder.isFalse(root.get("isUsed"));
+    }
+
+    public  Specification<Ship> filterBySpeed (Double minSpeed, Double maxSpeed) {
+        return (root, query, criteriaBuilder) -> {
+            if (minSpeed != null && maxSpeed != null) {
+                return criteriaBuilder.between(root.get("speed"), minSpeed, maxSpeed); }
+            else if(minSpeed !=null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("speed"), minSpeed);
             }
-            //time difference
-            Date before1 = new Date(before - 3600001);
-            Date after1 = new Date(after);
-            return criteriaBuilder.between(root.get("prodDate"), after1, before1);
+            else if (maxSpeed!= null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get("speed"), maxSpeed);
+            }
+            else return null;
+        };
+    }
+
+    public  Specification<Ship> filterByCrew (Integer minCrew, Integer maxCrew) {
+        return (root, query, criteriaBuilder) -> {
+            if (minCrew != null && maxCrew != null) {
+                return criteriaBuilder.between(root.get("crewSize"), minCrew, maxCrew); }
+            else if(minCrew !=null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("crewSize"), minCrew);
+            }
+            else if (maxCrew!= null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get("crewSize"), maxCrew);
+            }
+            else return null;
+        };
+    }
+
+    public  Specification<Ship> filterByRaiting (Double minRating , Double maxRating ) {
+        return (root, query, criteriaBuilder) -> {
+            if (minRating != null && maxRating != null) {
+                return criteriaBuilder.between(root.get("rating"), minRating, maxRating); }
+            else if(minRating !=null) {
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("rating"), minRating);
+            }
+            else if (maxRating != null) {
+                return criteriaBuilder.lessThanOrEqualTo(root.get("rating"), maxRating);
+            }
+            else return null;
         };
     }
 
 
-    public Specification<Ship> usageFilter(Boolean isUsed) {
-        return (root, query, criteriaBuilder) -> {
-            if (isUsed == null) {
-                return null;
-            }
-            if (isUsed) {
-                return criteriaBuilder.isTrue(root.get("isUsed"));
-            } else {
-                return criteriaBuilder.isFalse(root.get("isUsed"));
-            }
-        };
+
+        // Getting of quantity of all ships
+        public Long countShip(Specification<Ship> specification) {
+            return repo.count(specification);
+        }
+
+
+
+         public void createNewShip(Ship ship) throws  BadRequestExeption{
+             //Checking of missing arguments
+             if (checkingMissingDatum(ship) )
+             {
+                 throw new BadRequestExeption();
+             }
+             //Checking if production date is in range
+             if ( validationShipDatum(ship))
+             {
+                 throw new BadRequestExeption();
+             }
+             // Calculation of rating
+             ship.setRating(shipRating(ship));
+
+             repo.saveAndFlush(ship);
+
+         }
+
+
+      // Updating of ship
+      public void updateShip (Ship newShip, long id) throws  BadRequestExeption{
+          Ship ship = findShipById(id);
+          if (checkingMissingDatum(newShip) )
+          {
+              throw new BadRequestExeption();
+          }
+          //Checking if production date is in range
+          if ( validationShipDatum(newShip))
+          {
+              throw new BadRequestExeption();
+          }
+          ship.setName(newShip.getName());
+          ship.setPlanet(newShip.getPlanet());
+          ship.setShipType(newShip.getShipType());
+          ship.setProdDate(newShip.getProdDate());
+          ship.setUsed(newShip.isUsed());
+          ship.setSpeed(newShip.getSpeed());
+          ship.setCrewSize(newShip.getCrewSize());
+          ship.setRating(shipRating(ship));
+          repo.saveAndFlush(ship);
+
+      }
+
+
+      //Deleting of ship
+     public void deleteShip (long id) {
+         repo.deleteById(id);
+      }
+
+         //Finding ship by ID
+     public Ship findShipById(long id) {
+         try {
+             Optional<Ship> optional = repo.findById(id);
+             return optional.orElse(null);
+         } catch (NoSuchElementException e) {
+             e.printStackTrace();
+             return null;
+         }
+     }
+
+     //Checking of missing ship's datum
+    private boolean checkingMissingDatum (Ship ship) {
+        boolean filter1 = (ship.getName().equals("") || ship.getPlanet().equals(""));
+        boolean filter2 = (ship.getProdDate() == null || ship.getSpeed()==null||
+                ship.getCrewSize() == null);
+
+        return (filter1 || filter2 );
     }
 
 
-    public Specification<Ship> speedFilter(Double min, Double max) {
-        return (root, query, criteriaBuilder) -> {
-            if (min == null && max == null) {
-                return null;
-            }
-            if (min == null) {
-                return criteriaBuilder.lessThanOrEqualTo(root.get("speed"), max);
-            }
-            if (max == null) {
-                return criteriaBuilder.greaterThanOrEqualTo(root.get("speed"), min);
-            }
-            return criteriaBuilder.between(root.get("speed"), min, max);
-        };
+    //Validation of ship's datum and calculation
+    private boolean validationShipDatum (Ship ship) {
+        Calendar calendarBefore = Calendar.getInstance();
+        calendarBefore.set(3019, Calendar.DECEMBER,31);
+        Date dateBefore = calendarBefore.getTime();
+        Calendar calendarAfter = Calendar.getInstance();
+        calendarAfter.set(2800, Calendar.JANUARY,1);
+        Date dateAfter = calendarAfter.getTime();
+        boolean filter3 = (ship.getProdDate().after(dateAfter) && ship.getProdDate().before(dateBefore));
+
+        //Checking if speed is in range
+        long speed =Math.round( ship.getSpeed()*100);
+        boolean filter4 = (speed>=1 && speed <=99);
+        // Checking if crew quantity is in range
+        boolean filter5 = (ship.getCrewSize()>=1 && ship.getCrewSize() <=9999);
+
+        return (!filter3 || !filter4 || !filter5);
+    }
+
+    //Calculation of ship's rating
+    private Double shipRating (Ship ship) {
+        Calendar date = Calendar.getInstance();
+        date.setTime(ship.getProdDate());
+        int year = date.get(Calendar.YEAR);
+        Double k = ship.isUsed() ? 0.5: 1;
+        return (80 * ship.getSpeed()* k ) / (3019 - year + 1);
     }
 
 
-    public Specification<Ship> crewSizeFilter(Integer min, Integer max) {
-        return (root, query, criteriaBuilder) -> {
-            if (min == null && max == null) {
-                return null;
-            }
-            if (min == null) {
-                return criteriaBuilder.lessThanOrEqualTo(root.get("crewSize"), max);
-            }
-            if (max == null) {
-                return criteriaBuilder.greaterThanOrEqualTo(root.get("crewSize"), min);
-            }
-            return criteriaBuilder.between(root.get("crewSize"), min, max);
-        };
+
+
+
+
     }
 
 
-    public Specification<Ship> ratingFilter(Double min, Double max) {
-        return (root, query, criteriaBuilder) -> {
-            if (min == null && max == null) {
-                return null;
-            }
-            if (min == null) {
-                return criteriaBuilder.lessThanOrEqualTo(root.get("rating"), max);
-            }
-            if (max == null) {
-                return criteriaBuilder.greaterThanOrEqualTo(root.get("rating"), min);
-            }
-            return criteriaBuilder.between(root.get("rating"), min, max);
-        };
-    }
-}
 
 
 

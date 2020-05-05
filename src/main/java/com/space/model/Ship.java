@@ -2,49 +2,36 @@ package com.space.model;
 
 
 import javax.persistence.*;
-
-import java.io.Serializable;
 import java.util.Date;
 
 @Entity
 @Table(name = "ship")
-public class Ship implements Serializable {
+public class Ship  {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    //@Column(name = "id")
     private Long id;
 
-    @Column(name = "name")
+    @Column(length=50)
     private String name;
-    @Column(name = "planet")
+    @Column(length=50)
     private String planet;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "shipType")
     private ShipType shipType;
-    @Column(name = "prodDate")
+
     private Date prodDate;
-    @Column(name = "isUsed")
-    private Boolean isUsed;
-    @Column(name = "speed")
+    private Boolean isUsed = false;
     private Double speed;
-    @Column(name = "crewSize")
     private Integer crewSize;
-    @Column(name = "rating")
     private Double rating;
 
-    protected Ship() {
-    }
+    protected Ship() {   }
 
+    public Long getId() { return id; }
 
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public void setId(Long id) { this.id = id; }
 
     public String getName() {
         return name;
