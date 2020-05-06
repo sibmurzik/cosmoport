@@ -125,7 +125,9 @@ public class ShipService {
 
          public Ship createNewShip(Ship ship) throws  BadRequestExeption{
              //Checking of missing arguments
-             if (checkingMissingDatum(ship) )
+             boolean filter = (ship.getProdDate() == null || ship.getSpeed()==null||
+                     ship.getCrewSize() == null || ship.getShipType()==null);
+             if (checkingStringDatum(ship) || filter )
              {
                  throw new BadRequestExeption();
              }
@@ -149,7 +151,7 @@ public class ShipService {
 
 
           //Checking if production date is in range
-          if ( validationShipDatum(newShip))
+          if ( checkingStringDatum(newShip) || validationShipDatum(newShip))
           {
               throw new BadRequestExeption();
           }
@@ -186,28 +188,24 @@ public class ShipService {
      }
 
      //Checking of missing ship's datum
-    private boolean checkingMissingDatum (Ship ship) {
-        boolean filter1 = false;
-        if(ship.getName()==null || ship.getPlanet()==null) {
-            filter1 = true;
-        }
-        else {
-            filter1 = (ship.getName().equals("") || ship.getPlanet().equals(""));
-        }
-        boolean filter2 = (ship.getProdDate() == null || ship.getSpeed()==null||
-                ship.getCrewSize() == null || ship.getShipType()==null);
+    private boolean checkingStringDatum (Ship ship) {
+        boolean isName = false;
+        boolean isPlanet = false;
+        if(ship.getName()!=null ) isName = ship.getName().equals("") ;
+        if (ship.getPlanet() != null) isPlanet = ship.getPlanet().equals("");
+        return isName||isPlanet;
 
-        return (filter1 || filter2 );
+
     }
 
 
     //Validation of ship's datum and calculation
     private boolean validationShipDatum (Ship ship) {
-        boolean filter3 =false;
-        boolean filter4 = false;
-        boolean filter5 = false;
-        boolean filter6 = false;
-        boolean filter7 = false;
+        boolean filter1 = true;
+        boolean filter2 = true;
+        boolean filter3 = true;
+        boolean filter4 = true;
+        boolean filter5 = true;
         //Checking if production date is in range;
         if(ship.getProdDate() != null) {
             Calendar calendarBefore = Calendar.getInstance();
@@ -216,25 +214,25 @@ public class ShipService {
             Calendar calendarAfter = Calendar.getInstance();
             calendarAfter.set(2800, Calendar.JANUARY, 1);
             Date dateAfter = calendarAfter.getTime();
-            filter3 = (ship.getProdDate().after(dateAfter) && ship.getProdDate().before(dateBefore));
+            filter1 = (ship.getProdDate().after(dateAfter) && ship.getProdDate().before(dateBefore));
         }
         //Checking if speed is in range
         if (ship.getSpeed() != null) {
             long speed = Math.round(ship.getSpeed() * 100);
-            filter4 = (speed >= 1 && speed <= 99);
+            filter2 = (speed >= 1 && speed <= 99);
         }
         // Checking if crew quantity is in range
         if (ship.getCrewSize() != null ) {
-            filter5 = (ship.getCrewSize() >= 1 && ship.getCrewSize() <= 9999);
+            filter3 = (ship.getCrewSize() >= 1 && ship.getCrewSize() <= 9999);
         }
         //Checking of ship's name and planet name length
         if (ship.getName() != null) {
-            filter6 = ship.getName().length() <= 50 ;
+            filter4 = ship.getName().length() <= 50 ;
         }
         if (ship.getPlanet() != null) {
-            filter7 =  ship.getPlanet().length() <= 50;
+            filter5 =  ship.getPlanet().length() <= 50;
         }
-         return (!filter3 || !filter4 || !filter5 || !filter6 || !filter7);
+         return (!filter1 || !filter2 || !filter3 || !filter4 || !filter5);
     }
 
      //Calculation of ship's rating
@@ -242,8 +240,10 @@ public class ShipService {
         Calendar date = Calendar.getInstance();
         date.setTime(ship.getProdDate());
         int year = date.get(Calendar.YEAR);
-        Double k = ship.isUsed() ? 0.5: 1;
-        return (80 * ship.getSpeed()* k ) / (3019 - year + 1);
+        double k = ship.isUsed() ? 0.5: 1;
+        double rating =(80 * ship.getSpeed()* k ) / (3019 - year + 1);
+        int i = (int) Math.round(rating * 100);
+        return (double) i / 100;
     }
 
 
