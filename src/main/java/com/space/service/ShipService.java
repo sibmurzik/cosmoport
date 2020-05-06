@@ -1,7 +1,8 @@
 package com.space.service;
 
 
-import com.space.controller.BadRequestExeption;
+import com.space.exceptions.BadRequestExeption;
+import com.space.exceptions.ShipNotExist;
 import com.space.model.Ship;
 import com.space.model.ShipType;
 import com.space.repository.ShipRepository;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 
 
@@ -123,7 +123,7 @@ public class ShipService {
 
 
 
-         public void createNewShip(Ship ship) throws  BadRequestExeption{
+         public Ship createNewShip(Ship ship) throws  BadRequestExeption{
              //Checking of missing arguments
              if (checkingMissingDatum(ship) )
              {
@@ -137,14 +137,17 @@ public class ShipService {
              // Calculation of rating
              ship.setRating(shipRating(ship));
 
-             repo.saveAndFlush(ship);
+             return repo.saveAndFlush(ship);
 
          }
 
 
       // Updating of ship
-      public void updateShip (Ship newShip, long id) throws  BadRequestExeption{
+      public Ship updateShip (Ship newShip, long id) throws  BadRequestExeption, ShipNotExist{
+          if (id < 1)  throw new BadRequestExeption();
           Ship ship = findShipById(id);
+
+
           if (checkingMissingDatum(newShip) )
           {
               throw new BadRequestExeption();
@@ -162,32 +165,41 @@ public class ShipService {
           ship.setSpeed(newShip.getSpeed());
           ship.setCrewSize(newShip.getCrewSize());
           ship.setRating(shipRating(ship));
-          repo.saveAndFlush(ship);
+          return repo.saveAndFlush(ship);
 
       }
 
 
       //Deleting of ship
-     public void deleteShip (long id) {
+     public void deleteShip (long id) throws ShipNotExist{
+         if ( !repo.existsById(id)) {
+             throw  new ShipNotExist();
+         }
          repo.deleteById(id);
       }
 
          //Finding ship by ID
-     public Ship findShipById(long id) {
-         try {
+     public Ship findShipById(long id) throws ShipNotExist {
+             if ( !repo.existsById(id)) {
+                 throw  new ShipNotExist();
+             }
              Optional<Ship> optional = repo.findById(id);
              return optional.orElse(null);
-         } catch (NoSuchElementException e) {
-             e.printStackTrace();
-             return null;
-         }
+
+
      }
 
      //Checking of missing ship's datum
     private boolean checkingMissingDatum (Ship ship) {
-        boolean filter1 = (ship.getName().equals("") || ship.getPlanet().equals(""));
+        boolean filter1 = false;
+        if(ship.getName()==null || ship.getPlanet()==null) {
+            filter1 = true;
+        }
+        else {
+            filter1 = (ship.getName().equals("") || ship.getPlanet().equals(""));
+        }
         boolean filter2 = (ship.getProdDate() == null || ship.getSpeed()==null||
-                ship.getCrewSize() == null);
+                ship.getCrewSize() == null || ship.getShipType()==null);
 
         return (filter1 || filter2 );
     }
@@ -209,7 +221,10 @@ public class ShipService {
         // Checking if crew quantity is in range
         boolean filter5 = (ship.getCrewSize()>=1 && ship.getCrewSize() <=9999);
 
-        return (!filter3 || !filter4 || !filter5);
+        //Checking of ship's name and planet name length
+        boolean filter6 = (ship.getName().length()<=50 && ship.getPlanet().length() <= 50);
+
+        return (!filter3 || !filter4 || !filter5 || !filter6);
     }
 
     //Calculation of ship's rating

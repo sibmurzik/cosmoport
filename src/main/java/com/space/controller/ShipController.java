@@ -1,14 +1,12 @@
 package com.space.controller;
 
+import com.space.exceptions.BadRequestExeption;
+import com.space.exceptions.ShipNotExist;
 import com.space.model.Ship;
 import com.space.model.ShipType;
 import com.space.service.ShipService;
-import com.sun.deploy.net.HttpResponse;
-import com.sun.deploy.net.MessageHeader;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -16,9 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-import java.io.BufferedInputStream;
-import java.net.URL;
-import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -106,8 +101,8 @@ public class ShipController {
     @ResponseBody
     public ResponseEntity<Ship> createNewShip(@RequestBody Ship ship) {
         try {
-             service.createNewShip(ship);
-             return  new ResponseEntity<Ship>(HttpStatus.OK);
+             Ship newShip = service.createNewShip(ship);
+             return  new ResponseEntity<Ship>(newShip, HttpStatus.OK);
         }
         catch (BadRequestExeption e) {
             return new ResponseEntity<Ship>(HttpStatus.BAD_REQUEST);
@@ -118,14 +113,27 @@ public class ShipController {
     //Updating ship
     @RequestMapping(value = "/rest/ships/{id}", method = {RequestMethod.POST})
     @ResponseBody
-    public ResponseEntity<Ship> createNewShip(@RequestBody Ship ship,@PathVariable long id ) {
+    public ResponseEntity<Ship> updateShip(@RequestBody Ship ship,@PathVariable long id ) {
+
+    // Checking for empty body
+        if(ship.getName()==null && ship.getPlanet()==null && ship.getShipType()==null &&
+                ship.getProdDate()==null && ship.getSpeed()==null && ship.getCrewSize()==null &&
+                ship.getId() == null && ship.getRating()== null && !ship.isUsed()) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+
+
         try {
-            service.updateShip(ship, id);
-            return  new ResponseEntity<Ship>(HttpStatus.OK);
+            Ship newShip = service.updateShip(ship, id);
+            return  new ResponseEntity<Ship>(newShip, HttpStatus.OK);
         }
         catch (BadRequestExeption e) {
             return new ResponseEntity<Ship>(HttpStatus.BAD_REQUEST);
         }
+        catch (ShipNotExist e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
 
     }
 
@@ -134,18 +142,30 @@ public class ShipController {
 
     //Deleting of ship
     @RequestMapping(value = "/rest/ships/{id}", method = {RequestMethod.DELETE})
-    @ResponseStatus(HttpStatus.OK)
-    public void deleteShip(@PathVariable long id) {
-        service.deleteShip(id);
+    @ResponseBody
+    public ResponseEntity<Ship> deleteShip(@PathVariable long id) {
+        if (id <=0) return new ResponseEntity<Ship>(HttpStatus.BAD_REQUEST);
+        try {
+            service.deleteShip(id);
+            return new ResponseEntity<Ship>(HttpStatus.OK);
+        }
+        catch ( ShipNotExist e) {
+            return  new ResponseEntity<Ship>(HttpStatus.NOT_FOUND);
+        }
 
     }
 
     //Finding ship by ID
     @RequestMapping(value = "/rest/ships/{id}", method = {RequestMethod.GET})
-    @ResponseStatus(HttpStatus.OK)
-    public Ship findShip(@PathVariable long id) {
-        Ship ship = service.findShipById(id);
-        return ship;
+     @ResponseBody
+    public ResponseEntity<Ship> findShip(@PathVariable long id) {
+        try {
+            Ship ship = service.findShipById(id);
+            return new ResponseEntity<Ship>(ship, HttpStatus.OK);
+        }
+        catch (ShipNotExist e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
     }
 
 
