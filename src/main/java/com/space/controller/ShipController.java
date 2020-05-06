@@ -114,6 +114,17 @@ public class ShipController {
     @RequestMapping(value = "/rest/ships/{id}", method = {RequestMethod.POST})
     @ResponseBody
     public ResponseEntity<Ship> updateShip(@RequestBody Ship ship,@PathVariable long id ) {
+        // Checking for empty body
+        if (ship.getName() == null && ship.getPlanet()== null && ship.getProdDate()==null &&
+        ship.getShipType() == null && ship.getCrewSize()==null && ship.getSpeed()== null) {
+            try {
+                return new ResponseEntity<Ship>(service.findShipById(id), HttpStatus.OK);
+            }
+            catch ( ShipNotExist e) {
+                return  new ResponseEntity<Ship>(HttpStatus.NOT_FOUND);
+            }
+
+        }
 
         try {
             Ship newShip = service.updateShip(ship, id);

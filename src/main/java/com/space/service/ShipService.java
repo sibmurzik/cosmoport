@@ -146,18 +146,23 @@ public class ShipService {
       public Ship updateShip (Ship newShip, long id) throws  BadRequestExeption, ShipNotExist{
           if (id < 1)  throw new BadRequestExeption();
           Ship ship = findShipById(id);
+          //Checking for missing arguments
+          //if (checkingMissingDatum(newShip) ) {
+          //    throw new BadRequestExeption();
+          //}
+
           //Checking if production date is in range
-          if ( newShip.getName().equals("") || newShip.getPlanet().equals("")||validationShipDatum(newShip))
+          if ( validationShipDatum(newShip))
           {
               throw new BadRequestExeption();
           }
-          if (newShip.getName() != null) ship.setName(newShip.getName());
-          if (newShip.getPlanet() != null) ship.setPlanet(newShip.getPlanet());
-          if (newShip.getShipType() != null)ship.setShipType(newShip.getShipType());
-          if (newShip.getProdDate() != null)ship.setProdDate(newShip.getProdDate());
+          ship.setName(newShip.getName());
+          ship.setPlanet(newShip.getPlanet());
+          ship.setShipType(newShip.getShipType());
+          ship.setProdDate(newShip.getProdDate());
           ship.setUsed(newShip.isUsed());
-          if (newShip.getSpeed() != null)ship.setSpeed(newShip.getSpeed());
-          if (newShip.getCrewSize() != null) ship.setCrewSize(newShip.getCrewSize());
+          ship.setSpeed(newShip.getSpeed());
+          ship.setCrewSize(newShip.getCrewSize());
           ship.setRating(shipRating(ship));
           return repo.saveAndFlush(ship);
 
