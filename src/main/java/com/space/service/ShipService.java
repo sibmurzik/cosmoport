@@ -146,23 +146,20 @@ public class ShipService {
       public Ship updateShip (Ship newShip, long id) throws  BadRequestExeption, ShipNotExist{
           if (id < 1)  throw new BadRequestExeption();
           Ship ship = findShipById(id);
-          //Checking for missing arguments
-          //if (checkingMissingDatum(newShip) ) {
-          //    throw new BadRequestExeption();
-          //}
+
 
           //Checking if production date is in range
           if ( validationShipDatum(newShip))
           {
               throw new BadRequestExeption();
           }
-          ship.setName(newShip.getName());
-          ship.setPlanet(newShip.getPlanet());
-          ship.setShipType(newShip.getShipType());
-          ship.setProdDate(newShip.getProdDate());
+          if (newShip.getName()!=null) ship.setName(newShip.getName());
+          if (newShip.getPlanet()!=null)ship.setPlanet(newShip.getPlanet());
+          if (newShip.getShipType()!=null)ship.setShipType(newShip.getShipType());
+          if (newShip.getProdDate()!=null)ship.setProdDate(newShip.getProdDate());
           ship.setUsed(newShip.isUsed());
-          ship.setSpeed(newShip.getSpeed());
-          ship.setCrewSize(newShip.getCrewSize());
+          if (newShip.getSpeed()!=null)ship.setSpeed(newShip.getSpeed());
+          if (newShip.getCrewSize()!=null)ship.setCrewSize(newShip.getCrewSize());
           ship.setRating(shipRating(ship));
           return repo.saveAndFlush(ship);
 
@@ -206,27 +203,41 @@ public class ShipService {
 
     //Validation of ship's datum and calculation
     private boolean validationShipDatum (Ship ship) {
-        Calendar calendarBefore = Calendar.getInstance();
-        calendarBefore.set(3019, Calendar.DECEMBER,31);
-        Date dateBefore = calendarBefore.getTime();
-        Calendar calendarAfter = Calendar.getInstance();
-        calendarAfter.set(2800, Calendar.JANUARY,1);
-        Date dateAfter = calendarAfter.getTime();
-        boolean filter3 = (ship.getProdDate().after(dateAfter) && ship.getProdDate().before(dateBefore));
-
+        boolean filter3 =false;
+        boolean filter4 = false;
+        boolean filter5 = false;
+        boolean filter6 = false;
+        boolean filter7 = false;
+        //Checking if production date is in range;
+        if(ship.getProdDate() != null) {
+            Calendar calendarBefore = Calendar.getInstance();
+            calendarBefore.set(3019, Calendar.DECEMBER, 31);
+            Date dateBefore = calendarBefore.getTime();
+            Calendar calendarAfter = Calendar.getInstance();
+            calendarAfter.set(2800, Calendar.JANUARY, 1);
+            Date dateAfter = calendarAfter.getTime();
+            filter3 = (ship.getProdDate().after(dateAfter) && ship.getProdDate().before(dateBefore));
+        }
         //Checking if speed is in range
-        long speed =Math.round( ship.getSpeed()*100);
-        boolean filter4 = (speed>=1 && speed <=99);
+        if (ship.getSpeed() != null) {
+            long speed = Math.round(ship.getSpeed() * 100);
+            filter4 = (speed >= 1 && speed <= 99);
+        }
         // Checking if crew quantity is in range
-        boolean filter5 = (ship.getCrewSize()>=1 && ship.getCrewSize() <=9999);
-
+        if (ship.getCrewSize() != null ) {
+            filter5 = (ship.getCrewSize() >= 1 && ship.getCrewSize() <= 9999);
+        }
         //Checking of ship's name and planet name length
-        boolean filter6 = (ship.getName().length()<=50 && ship.getPlanet().length() <= 50);
-
-        return (!filter3 || !filter4 || !filter5 || !filter6);
+        if (ship.getName() != null) {
+            filter6 = ship.getName().length() <= 50 ;
+        }
+        if (ship.getPlanet() != null) {
+            filter7 =  ship.getPlanet().length() <= 50;
+        }
+         return (!filter3 || !filter4 || !filter5 || !filter6 || !filter7);
     }
 
-    //Calculation of ship's rating
+     //Calculation of ship's rating
     private Double shipRating (Ship ship) {
         Calendar date = Calendar.getInstance();
         date.setTime(ship.getProdDate());
