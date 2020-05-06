@@ -123,6 +123,9 @@ public class ShipController {
             catch ( ShipNotExist e) {
                 return  new ResponseEntity<Ship>(HttpStatus.NOT_FOUND);
             }
+            catch (BadRequestExeption e) {
+                return new ResponseEntity<Ship>(HttpStatus.BAD_REQUEST);
+            }
 
         }
 
@@ -169,9 +172,10 @@ public class ShipController {
         catch (ShipNotExist e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
+        catch (BadRequestExeption e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
     }
-
-
 
 
 

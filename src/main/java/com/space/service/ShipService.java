@@ -177,7 +177,8 @@ public class ShipService {
       }
 
          //Finding ship by ID
-     public Ship findShipById(long id) throws ShipNotExist {
+     public Ship findShipById(long id) throws ShipNotExist, BadRequestExeption {
+            if (id < 1)  throw new BadRequestExeption();
              if ( !repo.existsById(id)) {
                  throw  new ShipNotExist();
              }
