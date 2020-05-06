@@ -115,14 +115,6 @@ public class ShipController {
     @ResponseBody
     public ResponseEntity<Ship> updateShip(@RequestBody Ship ship,@PathVariable long id ) {
 
-    // Checking for empty body
-        if(ship.getName()==null && ship.getPlanet()==null && ship.getShipType()==null &&
-                ship.getProdDate()==null && ship.getSpeed()==null && ship.getCrewSize()==null &&
-                ship.getId() == null && ship.getRating()== null && !ship.isUsed()) {
-            return new ResponseEntity<>(HttpStatus.OK);
-        }
-
-
         try {
             Ship newShip = service.updateShip(ship, id);
             return  new ResponseEntity<Ship>(newShip, HttpStatus.OK);
